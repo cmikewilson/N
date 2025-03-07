@@ -1,0 +1,10 @@
+My first real program.
+It shows a Japanese word or phrase and asks for the pronunciation
+and you choose its definition from a list of options.
+
+I was proud of the double buffered VGA graphics.
+When I was later learned C, where pointers were presented as a boogieman,
+I was pleased to realize that they were just addresses.
+
+Mike Wilson
+
