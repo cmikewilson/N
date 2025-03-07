@@ -1,0 +1,37 @@
+n50:
+  xor cx,cx   ;first kanji goes in top left corner
+  xor dx,dx
+  mov si,offset thedata
+displaykanji:
+  mov al,b[si]   ;al is unused, isn't it?
+
+  cmp al,0a1h             ;need to see if kanji, ascii, kana, etc.
+  jae >L0                 ;if its >= 0a1, then it's kana or kanji
+
+  cmp al,020h   ;space    ;if it's not kanji or kana,
+  jne >A1                 ;then it's a single byte
+  mov bx,0a1a1h
+  inc si
+  jmp >L1
+
+A1:
+  cmp al,0ah   ;newline
+  jne pronunciation
+  xor cx,cx
+  add dx,010
+  inc si
+  jmp displaykanji
+
+L0:
+  mov bx,w[si]   ;bx holds kanji number
+  add si,2
+
+L1:
+  call subkanji
+  add cx,2
+  cmp cx,80xd
+  jne displaykanji
+  xor cx,cx
+  add dx,010h   ;increase row
+  jmp displaykanji
+

@@ -1,0 +1,12 @@
+n05:
+prestart:
+  mov si,081h   ;command tail area
+L0:
+  lodsb
+  cmp al,0dh
+  je >L1
+  cmp al,'x'
+  jne L0
+  mov xstatus,1
+L1:
+

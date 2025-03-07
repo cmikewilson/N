@@ -1,0 +1,78 @@
+n30:
+  mov allzeroes,0
+L0:
+  mov cx,0100   ;maximum number
+  call subgetrandomnumber
+;random number is in subrandomnumber! and still in dx
+
+  cmp dx,080h   ;0 - 080 means use a word from ichi dir.
+  jg >L1
+M1:
+  mov level,1
+  mov cx,nfichi
+  cmp cx,0
+  je >M2
+  jmp >L3
+L1:
+  cmp dx,0d0h   ;080 - 0d0h means ni dir.
+  jg >L2
+M2:
+  mov level,2
+  mov cx,nfni
+  cmp cx,0
+  jne >L3
+L2:
+  mov level,3
+  mov cx,nfsan
+  cmp cx,0
+  jne >L3
+  cmp allzeroes,1
+  jne >M3
+  jmp theend   ;no tango files
+M3:
+  mov allzeroes,1
+  jmp M1
+
+L3:
+  call subgetrandomnumber
+
+  mov di,offset tangoname
+  cmp level,1
+  jne >L5
+  mov si,offset ichipath
+  mov cx,5
+  jmp >L7
+L5:
+  cmp level,2
+  jne >L6
+  mov si,offset nipath
+  mov cx,3
+  jmp >L7
+L6:
+  mov si,offset sanpath
+  mov cx,4
+L7:
+  movsb
+  loop L7
+
+  mov si,offset wildtan
+  mov cx,6
+  rep movsb
+
+  mov bx,subrandomnumber
+  mov cx,0
+  mov ah,04eh   ;find first matching file
+  mov dx,offset tangopath
+  int 021h
+
+  cmp cx,bx
+  je tangofilefound
+
+findnextfile:
+  mov ah,04fh
+  int 021h
+
+  inc cx
+  cmp cx,bx
+  jne findnextfile
+

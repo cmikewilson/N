@@ -1,0 +1,162 @@
+n80:
+definition:
+  mov dontjump,0    ;clear this, it will be used farther down
+
+  mov ah,08h        ;get character from keyboard, no echo
+  int 021h          ;this is just a pause
+
+  mov ah,02h        ;position cursor at row 23
+; mov bh,0
+  mov dx,01700
+  int 010h
+
+  mov ah,09h                ;cover up what was there with
+  mov dx,offset blankline   ;a blank line
+  int 021h
+
+  mov ah,02h   ;position cursor
+; mov bh,0
+  mov dx,01700   ;row 23
+  int 010
+
+  mov dx,si       ;dx needs to point to the beginning of the def for printing
+  cmp b[si],0ah   ;compensate for the 0ah that pops up
+  jne >A1         ;when the pronun is wrong
+  inc dx
+A1:
+  lodsb
+  cmp al,01ah
+  jne A1
+  dec si
+  mov b[si],'$'   ;char to end the def when we print it
+
+  mov ah,09h   ;print the definition which is being pointed to by si
+  int 021h     ;dx points the the string
+
+  mov ah,02h   ;position cursor
+; mov bh,0
+  mov dx,01800   ;row 24
+  int 010
+
+  mov ah,09h                ;cover up what was on line
+  mov dx,offset blankline   ;24 with a blank line
+  int 021
+
+  mov ah,02h   ;position cursor
+; mov bh,0
+  mov dx,01900   ;row 25
+  int 010
+
+  mov ah,09                    ;ask whether the user knows
+  mov dx,offset knowtangoka    ;this word or not
+  int 021h
+
+  mov ah,08h   ;get character without echo
+  int 021h     ;do they know it?, assume no unless 'y'
+
+  cmp al,'y'   ;yes
+  jne >M1
+
+  cmp level,1     ;knows tango, move it up a dir,
+  jne >L1         ;inc/dec nf counters as necessary
+  inc level       ;in preparation for the renaming
+  dec nfichi
+  cmp xstatus,1   ;if files are stored in the x dir,
+  je >L0          ;the nf counter for the target dir
+  inc nfni        ;doesn't need incrementing
+L0:
+  jmp nexttango
+L1:
+  cmp level,2
+  jne >L3
+  inc level
+  dec nfni
+  cmp xstatus,1
+  je >L2
+  inc nfsan
+L2:
+  jmp nexttango
+L3:
+  cmp xstatus,1
+  jne >L4
+  dec nfsan
+  jmp nexttango
+L4:
+  mov dontjump,1    ;can't move up from the san dir,
+  jmp nexttango
+
+M1:                 ;doesn't know tango,
+  cmp level,1       ;move the word down a dir
+  jne >M3
+  cmp xstatus,1
+  jne >M2
+  dec nfichi
+  jmp nexttango
+M2:
+  mov dontjump,1    ;can't go lower than the ichi dir
+  jmp nexttango
+M3:
+  cmp level,2
+  jne >M5
+  dec nfni
+  dec level
+  cmp xstatus,1
+  je >M6
+  inc nfichi
+  jmp nexttango
+M5:
+  dec nfsan
+  dec level
+  cmp xstatus,1
+  je >M6
+  inc nfni
+M6:
+
+nexttango:
+  cmp xstatus,1      ;if we're not moving to the x dir,
+  je >N0             ;and if we're at an extreme dir,
+  cmp dontjump,0     ;then we don't rename anything and
+  je >N0             ;just jump back to the beginning
+  jmp start
+
+N0:
+  mov si,offset tangoname      ;copy tangofilename to oldtangoname
+  mov di,offset oldtangoname   ;to act as 'from' filename
+  mov cx,9
+  rep movsw
+
+  mov di,offset tangoname       ;now, we construct 'to' filename
+  cmp level,1                   ;put 'ichi\', 'ni\','san\'
+  jne >N1                       ;after tangoname
+  mov si,offset ichipath        ;as appropriate
+  mov cx,5
+  jmp >N3
+N1:
+  cmp level,2
+  jne >N2
+  mov si,offset nipath
+  mov cx,3
+  jmp >N3
+N2:
+  mov si,offset sanpath
+  mov cx,4
+N3:
+  rep movsb
+
+  cmp xstatus,0           ;unless we're moving things to an x dir,
+  je >O1                  ;then, don't put 'x\'
+  mov si,offset xpath     ;in the 'to' filename
+  mov cx,1
+  movsw
+
+O1:
+  mov si,09eh             ;09e is where the .tan file's name is
+  mov cx,13xd             ;it's left over from the 'find' interrupt
+  rep movsb
+
+  mov ah,056h                   ;rename from the old dir
+  mov dx,offset oldtangopath    ;to its new dir
+  mov di,offset tangopath
+  int 021h
+  jmp start                     ;start again with a new word
+

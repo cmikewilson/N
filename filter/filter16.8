@@ -1,0 +1,192 @@
+  jmp prestart
+
+
+  bdffilename db 'kanji16.bdf',0
+  bdffilehandle dw 0
+  bitfilename db 'kanji16.bit',0
+  bitfilehandle dw 0
+  datadump db 0
+  startchar db 'STARTCH'
+  junk2 db 3 dup 0
+  charnum db 4 dup 0,'$'
+  bitmap db 'BITMAP',0ah
+  bitmapcheck db 7 dup 0
+  nybble1 db 0
+  nybble2 db 0
+  nybble3 db 0
+  nybble4 db 0
+  junk db 0
+  word1 dw 0
+  word2 dw 0
+  line db 0
+
+
+prestart:
+  mov ah,03ch   ;create a file
+  mov cx,0   ;file attribute, plain file
+  mov dx,offset bitfilename
+  int 021h
+  mov bitfilehandle,ax
+
+  mov ah,03dh   ;open a file
+  mov al,0   ;read only
+  mov dx,offset bdffilename
+  int 021h
+  mov bdffilehandle,ax
+
+
+start:
+  mov ah,03fh   ;read from file
+  mov dx,offset datadump
+  mov bx,bdffilehandle
+  mov cx,1   ;number of bytes
+  int 021h
+
+  cmp ax,0
+  jne >L1
+  jmp theend
+
+L1:
+  cmp b[datadump],0ah   ;check for line feed
+  jne start
+
+  mov ah,03fh   ;read from file
+  mov dx,offset bitmapcheck
+  mov bx,bdffilehandle
+  mov cx,7   ;number of bytes
+  int 021h
+
+  cmp ax,0
+  jne >L2
+  jmp theend
+
+L2:
+  mov si,offset bitmap
+  mov di,offset bitmapcheck
+  mov cx,7
+  repe cmpsb
+  je nybblestart
+
+  mov si,offset startchar
+  mov di,offset bitmapcheck
+  mov cx,7
+  repe cmpsb
+  jne start
+
+  mov ah,03fh   ;read from file
+  mov dx,offset junk2
+  mov bx,bdffilehandle
+  mov cx,7
+  int 021h
+
+  cmp ax,0
+  jne >L3
+  jmp theend
+
+L3:
+  mov ah,02h   ;set cursor
+  mov dx,0   ;0,0
+  mov bh,0
+  int 010h
+
+  mov ah,09h   ;write string
+  mov dx,offset charnum
+  int 021h
+  jmp start
+
+
+nybblestart:
+  mov ah,03fh   ;read from file
+  mov dx,offset nybble1
+  mov bx,bdffilehandle
+  mov cx,5   ;number of bytes
+  int 021h
+
+  mov word1,0
+  mov bl,nybble1
+  mov ax,010h
+  mov cl,1
+
+L0:
+  cmp bl,039h   ;char 9
+  ja >l2
+
+L1:
+;zero-nine
+  sub bl,030h   ;change character (0-9) to number (00-09h)
+  jmp >L3
+
+L2:
+;hex
+  sub bl,057h   ;change character (a-f) to number (0a-0fh)
+
+L3:
+  mul bx   ;move nybble to leftmost position
+  add word1,ax
+
+  cmp cl,4
+  je nybbleend
+
+  cmp cl,1
+  jne >L4
+  inc cl
+  mov bl,nybble2
+  mov ax,01h
+  jmp L0
+
+L4:
+  cmp cl,2
+  jne >L5
+  inc cl
+  mov bl,nybble3
+  mov ax,01000h
+  jmp L0
+
+L5:
+  inc cl
+  mov bl,nybble4
+  mov ax,0100
+  jmp L0
+
+nybbleend:
+
+
+  xor cl,cl
+  mov ax,word1
+rotatedata:
+  rcl ax,1
+  rcl bx,1
+  cmp cl,0fh
+  je writedata
+  inc cl
+  jmp rotatedata
+
+
+writedata:
+  mov word2,bx
+  mov ah,040h   ;write to file
+  mov dx,offset word2
+  mov cx,2   ;number of bytes to write
+  mov bx,bitfilehandle
+  int 021h
+
+  inc line
+  cmp line,16
+  je >L9
+  jmp nybblestart
+L9:
+  mov line,0
+  jmp start
+
+
+theend:
+  mov ah,03eh   ;close file
+  mov bx,bdffilehandle
+  int 021h
+
+  mov ah,03eh   ;close file
+  mov bx,bitfilehandle
+  int 021h
+
+  int 020h
+

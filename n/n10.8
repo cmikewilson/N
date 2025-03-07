@@ -1,0 +1,58 @@
+n10:
+  mov ah,04ah   ;modify allocated memory block
+  mov bx,01000   ;number of paragraphs to set to
+  ;es already holds current segment
+  int 021h
+
+  mov ah,048h   ;allocate memory
+  mov bx,04000h   ;number of paragraphs requested
+  int 021h
+  ;ax holds block address
+  push ax
+
+  mov ax,03d00h   ;ah=03dh open a file,  al=0 read only
+  mov dx,offset subkanjifontname
+  int 021h
+  mov subkanjifonthandle,ax
+
+  pop ds
+  mov bx,ax   ;file handle in bx
+  mov ah,03fh   ;read file
+  mov cx,0fff0h   ;number of bytes to be read
+  mov dx,0   ;ds:dx holds dump position
+  int 021h
+
+  push ds
+  pop ax
+  cs mov subkanjisegment,ax
+  add ax,0fffh
+  push ax
+  pop ds
+
+  mov ah,03fh   ;read file second time
+  ;bx still holds file handle
+  ;cx still holds 0fff0h
+  ;dx still holds 0
+  int 021h
+
+  push ds
+  pop ax
+  add ax,0fffh
+  push ax
+  pop ds
+
+  mov ah,03fh   ;read file, third time
+  int 021h
+
+  push ds
+  pop ax
+  add ax,0fffh
+  push ax
+  pop ds
+
+  mov ah,03fh   ;read file, last time
+  int 021h
+
+  push cs
+  pop ds
+

@@ -1,0 +1,14 @@
+subgetrandomnumber:
+;cx = maximum number
+  push es
+  mov ax,0040h
+  mov es,ax
+  es mov ax,w[006ch]
+  ror ax,4
+  pop es
+;ax holds seed
+  mul cx
+  mov subrandomnumber,dx
+;0 <= dx and subrandomnumber < maximum number
+  ret
+

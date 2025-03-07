@@ -1,0 +1,99 @@
+n90:
+theend:
+  mov ax,0003   ;set screen, 80 col. color
+  int 010h
+
+  cmp xstatus,1         ;if we didn't move things to any x dirs,
+  je >L0                ;then there's nothing to move back
+  jmp theendreally
+
+L0:
+  mov ah,02h      ;position cursor
+  mov dx,01800h   ;line 25
+  int 021h
+
+  mov ah,09h                   ;tell user to wait while files are copied
+  mov dx,offset copyingfiles
+  int 021h
+
+  mov level,0                  ;start at level 1
+almosttheend:
+  inc level
+  mov di,offset tangoname
+
+  cmp level,1                  ;put in 'ichi\', 'ni\', or 'san\'
+  jne >L2
+  mov si,offset ichipath
+  mov cx,5
+  jmp >L4
+L2:
+  cmp level,2
+  jne >L3
+  mov si,offset nipath
+  mov cx,3
+  jmp >L4
+L3:
+  mov si,offset sanpath
+  mov cx,4
+L4:
+  rep movsb
+
+  mov si,offset xpath       ;put in 'x\'
+  mov cx,1
+  movsw
+
+  mov bx,di                 ;save location after 'x\' since we'll use later
+
+  mov si,offset wildtan     ;put in '*.tan'
+  mov cx,3
+  rep movsw
+
+  mov ah,04eh               ;find first matching file
+  mov cx,5                  ;archive bit
+  mov dx,offset tangopath
+  int 021h                  ;look for a file in the x dir so we can move it
+  jnc >M1                   ;when there aren't any left,
+  jmp theendmaybe           ;go up a level if possible
+
+M1:
+  mov si,09eh   ;09e is where the .tan file's name is held
+  mov di,bx     ;go before '*.tan' and put the found file's name
+  mov cx,7
+  rep movsw
+
+  mov si,offset tangoname      ;copy x dir filename
+  mov di,offset oldtangoname   ;to oldtangoname
+  mov cx,9
+  rep movsw
+
+  mov ax,bx
+  mov cx,offset tangopath      ;bx holds the location before '*.tan',
+  sub ax,cx                    ;but after 'x\', so back up before the 'x\'
+  sub ax,2                     ;in oldtangoname
+  mov di,offset oldtangopath   ;oldtangoname is the 'to' for the renaming
+  add di,ax
+
+  mov si,09eh       ;move the .tan file's name after the
+  mov cx,13         ;ichi/ni/san dir in oldtangoname
+  rep movsw
+
+  mov ah,056h                  ;rename tangopath
+  mov di,offset oldtangopath   ;to oldtangopath
+  mov dx,offset tangopath
+  int 021h
+
+  mov ah,04fh   ;find next file
+  int 021h
+  jnc M1
+
+theendmaybe:
+  cmp level,3         ;when we're finished with all files
+  je theendreally     ;in all 3 levels we really end
+  jmp almosttheend
+
+theendreally:
+  mov ah,04ch      ;exit to dos
+  int 021h
+
+thedata:     ;the storage space for the tango files is here
+

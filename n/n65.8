@@ -1,0 +1,29 @@
+n65:
+pronunciation:
+  mov ah,02h   ;position cursor
+  mov bh,0
+  mov dx,01700   ;row 23
+  int 010h
+
+  mov ah,09h   ;print string
+  mov dx,offset pronuninput
+  int 021h
+
+  mov ah,02h   ;position cursor
+; mov bh,0
+  mov dx,01800   ;row 24
+  int 010h
+
+  mov ah,09h   ;print string
+  mov dx,offset blankline
+  int 021h
+
+  mov ah,02h   ;position cursor
+; mov bh,0
+  mov dx,01800   ;row 24
+  int 010h
+
+  mov ah,0ah   ;get string
+  mov dx,offset prepronun
+  int 021h
+

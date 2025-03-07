@@ -1,0 +1,40 @@
+n40:
+tangofilefound:
+  mov di,offset tangoname
+  cmp level,1
+  jne >L1
+  mov si,offset ichipath
+  mov cx,5
+  jmp >L3
+L1:
+  cmp level,2
+  jne >L2
+  mov si,offset nipath
+  mov cx,3
+  jmp >L3
+L2:
+  mov si,offset sanpath
+  mov cx,4
+L3:
+  rep movsb
+
+  mov si,09eh
+  mov cx,13xd
+L4:
+  rep movsb
+
+  mov ah,03dh   ;open a file
+  mov al,0   ;read only file
+  int 021h
+  mov tangofilehandle,ax
+  mov bx,ax
+
+  mov ah,03fh   ;read from file
+  mov cx,0fffh   ;read 0fffh bytes
+  mov dx,offset thedata
+  int 021h
+
+  mov bx,tangofilehandle
+  mov ah,03eh   ;close file
+  int 021h
+

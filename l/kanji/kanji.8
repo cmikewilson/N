@@ -1,0 +1,114 @@
+subkanji:
+;font file should already be open
+  xchg bh,bl
+
+  cmp bh,0a1h   ;jsymbols1
+  jne >A1
+  mov bh,0
+  sub bl,0a1h
+; offset is zero
+  jmp >L0
+
+A1:
+  cmp bh,0a2h   ;jsymbols2
+  jne >A2
+  mov bh,0
+  sub bh,0a1h
+; offset is zero
+  jmp >L0
+
+A2:
+  cmp bh,0a3h   ;jascii
+  jne >A3
+  mov bh,0
+  sub bl,0a1h
+  add bx,jasciioffset
+  jmp >L0
+
+A3:
+  cmp bh,0a4h   ;hiragana
+  jne >A4
+  mov bh,0
+  sub bl,0a1h
+  add bx,hiraganaoffset
+  jmp >L0
+
+A4:
+  cmp bh,0a5h   ;katakana
+  jne >A5
+  mov bh,0
+  sub bl,0a1h
+  add bx,katakanaoffset
+  jmp >L0
+
+; 0a6h and 0a7h are russian characters
+
+A5:
+; cmp bh,0b0h   ;kanji1
+  push dx
+  mov dh,0      ;we multiply bh by 05eh
+  mov dl,bh     ;(from 0ba1h to 0bffh is 05eh kanji)
+  sub dl,0b0h   ;and add (bl-0a1h) and the offset to it
+  mov ax,05eh
+  mul dx
+  pop dx
+
+  mov bh,0
+  sub bl,0a1h
+  add bx,ax
+  add bx,kanji1offset
+
+L0:
+  push es
+  push si
+  push di
+  push bx
+  push cx
+  push dx
+
+  push dx
+  mov ax,0020h   ;clear ah,  al=32 length of kanji record in font file
+  mul bx   ;bx x ax = dx:ax
+  push ax
+  mov ax,01000h
+  mul dx   ;dx x ax = dx:ax, only ax is significant
+  mov bx,subkanjisegment
+  add bx,ax   ;bx holds segment
+  push bx
+  pop ds
+  pop si
+  ;ds should have segment of section in memory holding kanji info
+  ;si should have offset ...
+  pop dx
+
+
+  mov ax,80xd
+  mul dx
+  mov dx,0a000h   ;vga starts at 0a000:0
+  mov es,dx
+  mov bx,dx
+  add cx,ax
+  mov di,cx   ;es:di points to place in vga memory the kanji goes to
+
+  xor dx,dx
+L1:
+  movsw
+  mov di,cx   ;compensate for the increase made by movs
+  add bx,05h   ;move down a line
+  mov es,bx
+  inc dx
+  cmp dx,010h
+  jne L1
+
+
+  pop dx
+  pop cx
+  pop bx
+
+  push cs
+  pop ds
+  pop di
+  pop si
+  pop es
+  ret
+

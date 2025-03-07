@@ -1,0 +1,102 @@
+n70:
+  mov cx,si              ;the address to the (first) actual answer
+  mov di,offset pronun   ;the address of the user's answer
+  lodsb                  ;al holds number of pronunciations
+  sub al,030h            ;convert from ascii
+  mov dl,al              ;the number of actual answers
+  inc si
+checkpronunciation:
+  cmp dl,0               ;are we finished?
+  je >L5
+L1:
+  lodsb                  ;al holds byte from the actual answer
+  mov ah,b[di]           ;ah holds byte from the user's answer
+  cmp ah,'Q'             ;exit if user answered with a 'Q'
+  jne >L2
+  jmp theend
+L2:
+  inc di                 ;have to inc di manually to keep up with si
+  cmp al,0ah             ;the end of the actual answer
+  je >L4
+  cmp al,ah              ;compare the user's answer with the actual
+  je L1
+
+L3:
+  lodsb                  ;failure
+  cmp al,0ah             ;go to the end of the actual answer
+  jne L3
+A1:
+  mov failcheck,1
+  dec dl
+  mov di,offset pronun
+  jmp checkpronunciation
+
+L4:                      ;al holds 0ah
+  cmp ah,0dh             ;the end of the actual answer has been reached
+  jne A1                 ;does the user's answer end at the same place?
+  dec dl
+  mov failcheck,0
+A2:
+  cmp dl,0               ;clear the unused actual pronuns
+  je >L5
+A3:
+  lodsb
+  cmp al,0ah
+  jne A3
+  dec dl
+  jmp A2
+
+L5:
+  cmp failcheck,1        ;did we fail?
+  je >L7
+
+L6:                      ;correct
+  mov ah,02h             ;position cursor at
+; mov bh,0
+  mov dx,01700           ;row 23
+  int 010h
+
+  mov ah,09h             ;tell user that they got it right
+  mov dx,offset pronuncorrect
+  int 021h
+
+  jmp definition         ;go on to def
+
+L7:                      ;incorrect
+  mov ah,02h             ;position cursor at
+; mov bh,0
+  mov dx,01700           ;row 23
+  int 010
+
+  mov ah,09h             ;tell user they got it wrong
+  mov dx,offset pronunincorrect
+  int 021h
+
+  mov ah,02h             ;position cursor at
+  mov dx,01800           ;row 24
+  int 010h
+
+  mov ah,09h             ;give user the correct pronun
+  mov dx,offset givecorrectpronun   ;'The correct pronun is '
+  int 021h
+
+  push di                ;save di
+  mov di,cx              ;set di to the first actual pronun
+  add di,2               ;except that we have to move past the
+  dec si                 ;number of pronuns
+L8:
+  cmp di,si              ;if si and di are the same,
+  je >L9                 ;then we're through
+  mov dl,b[di]
+  inc di
+
+  cmp dl,0ah             ;replace the 0a's with commas
+  jne >A1
+  mov dl,','
+A1:
+  mov ah,02h             ;display each character of the pronuns
+  int 021h               ;until they've been shown
+  jmp L8
+L9:
+  pop di
+

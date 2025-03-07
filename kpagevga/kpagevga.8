@@ -1,0 +1,67 @@
+start:
+  mov ah,03dh   ;open a file
+  mov dx,offset fontname
+  mov al,0   ;reading
+  int 021h
+  mov fontfilehandle,ax
+
+  mov ah,0   ;set video mode
+  mov al,011h   ;video mode, 640 x 200 bw
+  int 010h
+
+  mov bx,0   ;kanji number
+  mov cx,0   ;column number
+  mov dx,0   ;row number
+
+  xor ax,ax   ;kanji per page counter
+  push ax
+
+showkanji:
+  call subkanji
+
+  pop ax
+  inc ax
+  cmp ax,1200
+  jne >L1
+  xor ax,ax
+  push ax
+  mov ah,07h   ;wait for key
+  int 021h
+  cmp al,020h
+  jne theend
+  mov ah,0
+;6 to 011h (vga)
+  mov al,011h
+  int 010
+  pop ax
+L1:
+  push ax
+
+  inc bx
+
+  add cx,2
+  cmp cx,80xd
+  jne showkanji
+
+  xor cx,cx
+  add dx,010h
+  cmp dx,480
+  jne showkanji
+
+  mov ah,0
+  mov al,011h
+  int 010h
+  xor dx,dx
+  xor cx,cx
+  jmp showkanji
+
+theend:
+  mov ah,03eh   ;close file
+  mov bx,fontfilehandle
+  int 021h
+
+  mov ah,0   ;set video mode
+  mov al,03h   ;video mode, 80 column color
+  int 010h
+  int 020h
+

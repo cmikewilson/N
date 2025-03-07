@@ -1,0 +1,57 @@
+  mov bl,0   ;directory number
+
+tangodircount:
+  inc bl
+  mov di,offset tangoname
+  cmp bl,1
+  jne >L3
+  mov si,offset ichipath   ;move "ichi\" to tangoname
+  mov cx,5
+  jmp >L5
+L3:
+  cmp bl,2
+  jne >L4
+  mov si,offset nipath   ;move "ni\" to tangoname
+  mov cx,3
+  jmp >L5
+L4:
+  mov si,offset sanpath   ;move "san\" to tangoname
+  mov cx,4
+L5:
+  movsb
+  loop L5
+
+  mov si,offset wildtan   ;move "*.tan" to tangoname
+  mov cx,6
+L6:
+  movsb
+  loop L6
+
+  xor cx,cx  ;number of files found
+  mov ah,04eh   ;find first match
+  mov dx,offset tangopath
+  int 021h
+  jc >L7
+
+countnexttango:
+  inc cx
+  mov ah,04fh   ;find next match
+  int 021h
+  jnc countnexttango
+
+L7:
+  cmp bl,1
+  jne >L8
+  mov nfichi,cx
+  jmp >L10
+L8:
+  cmp bl,2
+  jne >L9
+  mov nfni,cx
+  jmp >L10
+L9:
+  mov nfsan,cx
+L10:
+  cmp bl,3
+  jne tangodircount
+

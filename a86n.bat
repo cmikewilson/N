@@ -1,0 +1,1 @@
+a86 n\n.d l\getrn\getrn.d l\kanji\kanji.d l\getrn\getrn.8 l\kanji\kanji.8 n\n*.8

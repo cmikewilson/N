@@ -1,0 +1,10 @@
+start:
+  push es
+  push 0a000h   ;video area
+  pop es
+  mov di,0
+  mov ax,0
+  mov cx,04b00h   ;number of times
+  rep stosw
+  pop es
+
