@@ -6,5 +6,7 @@ I was proud of the double buffered VGA graphics.
 When I was later learned C, where pointers were presented as a boogieman,
 I was pleased to realize that they were just addresses.
 
+Written for use with the A86 assembler, a shareware assembler of the time.
+
 Mike Wilson
 
